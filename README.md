@@ -4,6 +4,8 @@ A demo in three parts. A Rust web service takes a bank transfer as JSON, scores 
 
 **Status: prototype.** 12 Rust tests pass, and `cargo fmt --check` and `cargo clippy -- -D warnings` are clean. The service was run against the compiled COBOL library with GnuCOBOL 3.2, and `Anchor.sol` compiles with solc 0.8.24. All of that was re-run in October 2026. CI builds the image, starts the sidecar and an Anvil node with Docker Compose, and checks that /health reports the COBOL library loaded and the node reachable.
 
+[![CI](https://github.com/cyber-physical-engineering/legacy_titan_bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/cyber-physical-engineering/legacy_titan_bridge/actions/workflows/ci.yml)
+
 James Thornton set the architecture and requirements. The code was written with AI-assisted development in late 2025. The tests and checks were re-run in October 2026.
 
 ## The three parts
