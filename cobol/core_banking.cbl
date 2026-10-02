@@ -1,16 +1,17 @@
       ******************************************************************
-      * LEGACY TITAN BRIDGE - CORE BANKING TRANSACTION PROCESSOR
+      * LEGACY TITAN BRIDGE - CORE BANKING SUBROUTINE (SIMULATED)
       ******************************************************************
       * Program:     CORE-BANKING
-      * Author:      BDP Engineering
-      * Date:        2024
-      * Purpose:     Enterprise transaction processing subroutine
-      *              designed for FFI integration with Rust sidecar
-      * 
-      * Description: Simulates a high-volume Transaction Processing
-      *              System (TPS) for legacy mainframe environments.
-      *              Processes financial transactions and returns
-      *              standardized status codes.
+      * Author:      James Thornton
+      * Date:        2024, revised 2026
+      * Purpose:     A transaction-processing subroutine for the Rust
+      *              sidecar to call over FFI. Account checks are
+      *              simulated: balances derive from the first character
+      *              of the account ID, and there is no ledger behind
+      *              them.
+      *
+      * Description: Takes one transaction, applies the checks below,
+      *              and returns a status code and message.
       *
       * Entry Point: PROCESS-TX
       * Parameters:  TX-AMOUNT   (Input)  - Transaction amount
@@ -30,7 +31,6 @@
       ******************************************************************
        IDENTIFICATION DIVISION.
        PROGRAM-ID. CORE-BANKING.
-       AUTHOR. BDP-ENGINEERING.
        DATE-WRITTEN. 2024.
        
        ENVIRONMENT DIVISION.

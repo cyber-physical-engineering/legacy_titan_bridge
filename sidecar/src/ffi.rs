@@ -1,11 +1,24 @@
-//! COBOL FFI (Foreign Function Interface) Bridge
+//! COBOL FFI bridge
 //!
-//! Provides safe Rust bindings to the legacy COBOL `core_banking.cbl` library.
-//! Uses dynamic loading to interface with the compiled COBOL shared library.
+//! Rust bindings to the COBOL `core_banking.cbl` routine, loaded at run time
+//! from a shared library. The call itself is `unsafe`: raw pointers cross into
+//! COBOL, and the GnuCOBOL runtime is not thread-safe, so calls are serialized.
 
 use anyhow::Result;
 use libloading::{Library, Symbol};
+use std::os::raw::{c_char, c_int};
+use std::sync::Mutex;
 use thiserror::Error;
+
+/// GnuCOBOL exports `ENTRY "PROCESS-TX"` as the C symbol `PROCESS__TX`:
+/// a hyphen in a COBOL name becomes a double underscore.
+const PROCESS_TX_SYMBOL: &[u8] = b"PROCESS__TX\0";
+
+/// The GnuCOBOL runtime must be initialized once before any COBOL entry point runs.
+const COB_INIT_SYMBOL: &[u8] = b"cob_init\0";
+
+type ProcessTxFn = unsafe extern "C" fn(*mut CobolRequest, *mut CobolResponse) -> c_int;
+type CobInitFn = unsafe extern "C" fn(c_int, *mut *mut c_char);
 
 /// COBOL FFI errors
 #[derive(Error, Debug)]
@@ -20,6 +33,7 @@ pub enum CobolError {
     ProcessingFailed(String),
 
     #[error("Invalid response from COBOL: {0}")]
+    #[allow(dead_code)]
     InvalidResponse(String),
 }
 
@@ -51,6 +65,7 @@ pub struct CobolResponse {
 
 /// Parsed response from COBOL processor
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct TransactionResponse {
     pub status_code: String,
     pub message: String,
@@ -61,6 +76,8 @@ pub struct TransactionResponse {
 /// Bridge to COBOL core_banking library
 pub struct CobolBridge {
     _library: Library,
+    /// The GnuCOBOL runtime is not thread-safe, so calls are serialized.
+    call_lock: Mutex<()>,
 }
 
 impl CobolBridge {
@@ -72,14 +89,23 @@ impl CobolBridge {
                 .map_err(|e| CobolError::LibraryLoad(format!("{}: {}", lib_path, e)))?
         };
 
-        // Verify the PROCESS-TX symbol exists
         unsafe {
-            let _: Symbol<extern "C" fn(*mut CobolRequest, *mut CobolResponse)> = library
-                .get(b"PROCESS-TX")
-                .map_err(|e| CobolError::SymbolNotFound(format!("PROCESS-TX: {}", e)))?;
+            // Verify the PROCESS-TX entry point exists
+            let _: Symbol<ProcessTxFn> = library
+                .get(PROCESS_TX_SYMBOL)
+                .map_err(|e| CobolError::SymbolNotFound(format!("PROCESS__TX: {}", e)))?;
+
+            // Start the GnuCOBOL runtime before the first call
+            let cob_init: Symbol<CobInitFn> = library
+                .get(COB_INIT_SYMBOL)
+                .map_err(|e| CobolError::SymbolNotFound(format!("cob_init: {}", e)))?;
+            cob_init(0, std::ptr::null_mut());
         }
 
-        Ok(Self { _library: library })
+        Ok(Self {
+            _library: library,
+            call_lock: Mutex::new(()),
+        })
     }
 
     /// Process a transaction through the COBOL processor
@@ -116,17 +142,23 @@ impl CobolBridge {
             tx_hash: [b'0'; 64],
         };
 
-        // Call COBOL processor
-        unsafe {
-            let func: Symbol<extern "C" fn(*mut CobolRequest, *mut CobolResponse)> = self
-                ._library
-                .get(b"PROCESS-TX")
-                .map_err(|e| CobolError::SymbolNotFound(format!("PROCESS-TX: {}", e)))?;
+        // Call COBOL processor, one call at a time
+        {
+            let _guard = self
+                .call_lock
+                .lock()
+                .map_err(|_| CobolError::ProcessingFailed("COBOL call lock poisoned".into()))?;
+            unsafe {
+                let func: Symbol<ProcessTxFn> = self
+                    ._library
+                    .get(PROCESS_TX_SYMBOL)
+                    .map_err(|e| CobolError::SymbolNotFound(format!("PROCESS__TX: {}", e)))?;
 
-            func(
-                &mut request as *mut CobolRequest,
-                &mut response as *mut CobolResponse,
-            );
+                func(
+                    &mut request as *mut CobolRequest,
+                    &mut response as *mut CobolResponse,
+                );
+            }
         }
 
         // Parse response

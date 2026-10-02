@@ -25,6 +25,7 @@ pub enum BlockchainError {
     TransactionFailed(String),
 
     #[error("Provider error: {0}")]
+    #[allow(dead_code)]
     ProviderError(String),
 }
 
@@ -36,6 +37,7 @@ pub struct TransactionReceipt {
     /// Gas used
     pub gas_used: Option<u64>,
     /// Block number
+    #[allow(dead_code)]
     pub block_number: Option<u64>,
 }
 
@@ -92,9 +94,8 @@ impl EthereumClient {
         // Parse contract address
         let contract_addr = contract_address.and_then(|addr| {
             addr.parse::<Address>()
-                .map_err(|e| {
+                .inspect_err(|&e| {
                     warn!("Invalid contract address: {}", e);
-                    e
                 })
                 .ok()
         });
@@ -204,6 +205,7 @@ impl EthereumClient {
     }
 
     /// Get the number of roots stored in the contract
+    #[allow(dead_code)]
     pub async fn get_roots_count(&self) -> Result<u64, BlockchainError> {
         let provider = self
             .provider
@@ -226,6 +228,7 @@ impl EthereumClient {
     }
 
     /// Get a specific root by index
+    #[allow(dead_code)]
     pub async fn get_root(&self, index: u64) -> Result<[u8; 32], BlockchainError> {
         let provider = self
             .provider
