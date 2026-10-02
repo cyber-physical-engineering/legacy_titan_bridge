@@ -71,6 +71,7 @@ impl MerkleAccumulator {
 
     /// Add multiple transaction hashes in batch
     /// Returns the starting position of the batch
+    #[allow(dead_code)]
     pub fn add_leaves(&self, hashes: &[[u8; 32]]) -> usize {
         let mut state = self.state.write();
         let start_position = state.leaves.len();
@@ -104,7 +105,7 @@ impl MerkleAccumulator {
 
         info!(
             leaf_count = %leaf_count,
-            root = %hex::encode(&root),
+            root = %hex::encode(root),
             "Computed Merkle root"
         );
 
@@ -141,6 +142,7 @@ impl MerkleAccumulator {
     }
 
     /// Get the total number of transactions processed (lifetime)
+    #[allow(dead_code)]
     pub fn total_processed(&self) -> u64 {
         self.state.read().total_processed
     }
@@ -158,6 +160,7 @@ impl MerkleAccumulator {
 
     /// Generate a Merkle proof for a specific leaf index
     /// Returns None if index is out of bounds or tree is empty
+    #[allow(dead_code)]
     pub fn generate_proof(&self, index: usize) -> Option<Vec<[u8; 32]>> {
         let state = self.state.read();
 

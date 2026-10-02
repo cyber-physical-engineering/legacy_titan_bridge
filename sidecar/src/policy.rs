@@ -20,6 +20,7 @@ pub enum RiskLevel {
 
 /// Result of a risk assessment
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct RiskAssessment {
     /// Assigned risk level
     pub level: RiskLevel,
@@ -33,6 +34,7 @@ pub struct RiskAssessment {
 
 /// Configuration for the policy engine
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct PolicyConfig {
     /// Amount threshold for HIGH risk flag (default: $10,000)
     pub high_risk_threshold: f64,
@@ -75,6 +77,7 @@ impl PolicyEngine {
     }
 
     /// Create a new policy engine with custom configuration
+    #[allow(dead_code)]
     pub fn with_config(config: PolicyConfig) -> Self {
         Self { config }
     }
@@ -166,7 +169,7 @@ impl PolicyEngine {
         }
 
         // Just under reporting thresholds (common structuring pattern)
-        let just_under_10k = amount >= 9_000.0 && amount <= 9_999.0;
+        let just_under_10k = (9_000.0..=9_999.0).contains(&amount);
         let exact_500 = cents % 50_000 == 0;
 
         just_under_10k && exact_500

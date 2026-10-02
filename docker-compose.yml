@@ -1,13 +1,8 @@
-# ==============================================================================
-# Legacy Titan Bridge - Docker Compose for Local Development
-# ==============================================================================
-# Provides a complete local development environment including:
-# - Titan Sidecar (Rust + COBOL)
-# - Local Ethereum node (Hardhat/Anvil)
-# - Optional monitoring stack
-# ==============================================================================
-
-version: "3.9"
+# Legacy Titan Bridge: Docker Compose for local development
+# Default profile: the Titan sidecar (Rust + COBOL) on port 3000 and an Anvil
+# Ethereum node on port 8545 (chain ID 31337).
+# The "deploy" profile adds a one-shot step that deploys Anchor.sol. It is
+# opt-in, and the sidecar anchors a root only when ANCHOR_CONTRACT is set.
 
 services:
   # ============================================================================
@@ -47,14 +42,14 @@ services:
   ethereum:
     image: ghcr.io/foundry-rs/foundry:latest
     container_name: titan-ethereum
-    command: >
-      anvil --host 0.0.0.0 --port 8545 --chain-id 31337 --accounts 10 --balance 1000 --block-time 1
+    entrypoint: ["anvil"]
+    command: ["--host", "0.0.0.0", "--port", "8545", "--chain-id", "31337", "--accounts", "10", "--balance", "1000", "--block-time", "1"]
     ports:
       - "8545:8545"
     networks:
       - titan-network
     healthcheck:
-      test: [ "CMD", "curl", "-sf", "http://localhost:8545" ]
+      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://localhost:8545"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -74,15 +69,15 @@ services:
         condition: service_healthy
     networks:
       - titan-network
-    command: >
-      sh -c "
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
         echo 'Deploying Anchor contract...' &&
-        forge create --rpc-url http://ethereum:8545 
-          --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-          Anchor.sol:Anchor 
-          --constructor-args 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 ||
-        echo 'Deployment skipped or failed - contract may already exist'
-      "
+        forge create Anchor.sol:Anchor --rpc-url http://ethereum:8545 --broadcast
+        --out /tmp/forge-out --cache-path /tmp/forge-cache
+        --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+        --constructor-args 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 ||
+        (echo 'Deployment did not complete. Check the forge output above. The sidecar needs ANCHOR_CONTRACT set to a deployed address.' && exit 1)
     profiles:
       - deploy
 

@@ -2,11 +2,11 @@
 name = "titan-sidecar"
 version = "0.1.0"
 edition = "2021"
-authors = ["BDP Engineering <engineering@bdp.dev>"]
-description = "Enterprise security sidecar for COBOL-to-blockchain bridging"
+authors = ["James Thornton"]
+description = "Demo sidecar: runs bank transfers through a COBOL routine, batches their hashes in a Merkle tree, anchors the root on Ethereum"
 license = "Apache-2.0"
-repository = "https://github.com/bdp/legacy-titan-bridge"
-keywords = ["blockchain", "cobol", "merkle", "enterprise", "security"]
+repository = "https://github.com/cyber-physical-engineering/legacy_titan_bridge"
+keywords = ["cobol", "merkle", "ethereum", "axum", "ffi"]
 categories = ["cryptography", "web-programming"]
 
 [dependencies]

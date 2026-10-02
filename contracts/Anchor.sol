@@ -3,21 +3,22 @@ pragma solidity ^0.8.19;
 
 /**
  * @title Anchor
- * @author BDP Engineering
- * @notice Immutable ledger for storing Merkle roots from legacy transaction batches
- * @dev This contract stores daily Merkle roots submitted by the Titan Bridge sidecar,
- *      enabling cryptographic proof that millions of legacy transactions were processed.
+ * @author James Thornton
+ * @notice Append-only store of Merkle roots from batches of legacy transactions
+ * @dev The Titan Bridge sidecar submits a root whenever it commits a batch.
+ *      One root stands for every transaction hashed into that batch.
  *
  * Architecture:
  * ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
- * │  COBOL Legacy   │────▶│  Rust Sidecar    │────▶│   This Contract │
- * │  (1M+ TX/day)   │     │  (Merkle Batch)  │     │   (Root Storage)│
+ * │  COBOL routine  │────▶│  Rust sidecar    │────▶│   This contract │
+ * │  (transactions) │     │  (Merkle batch)  │     │  (root storage) │
  * └─────────────────┘     └──────────────────┘     └─────────────────┘
  *
- * Security Considerations:
- * - Only the designated submitter can add roots (access control)
- * - Roots are immutable once stored (append-only)
- * - Events enable off-chain indexing and verification
+ * Security notes:
+ * - Only the designated submitter can add roots
+ * - A stored root cannot be changed or removed: the contract has no
+ *   update or delete function
+ * - Events allow off-chain indexing and verification
  */
 contract Anchor {
     // =========================================================================

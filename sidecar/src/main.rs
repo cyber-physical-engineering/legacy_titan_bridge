@@ -1,14 +1,14 @@
-//! # Legacy Titan Bridge - Security Sidecar
+//! # Legacy Titan Bridge: the sidecar
 //!
-//! Enterprise-grade Rust security enclave for bridging legacy COBOL
-//! mainframe systems to Ethereum blockchain via Merkle tree batching.
-//!
-//! ## Architecture
+//! A demo web service. It takes a bank transfer as JSON, scores it with a
+//! small risk policy, runs it through a COBOL routine over FFI, and adds the
+//! transfer's SHA-256 hash to a Merkle tree. `/commit-batch` submits the
+//! tree's root to the `Anchor.sol` contract when an Ethereum node is reachable.
 //!
 //! ```text
 //! ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-//! │  COBOL Legacy   │────▶│  Rust Sidecar    │────▶│   Ethereum      │
-//! │  (Transaction)  │ FFI │  (Policy+Merkle) │ RPC │  (Anchor.sol)   │
+//! │  COBOL routine  │────▶│  Rust sidecar    │────▶│   Ethereum      │
+//! │  (core_banking) │ FFI │  (policy+Merkle) │ RPC │  (Anchor.sol)   │
 //! └─────────────────┘     └──────────────────┘     └─────────────────┘
 //! ```
 
@@ -184,7 +184,7 @@ async fn handle_transfer(
         tree_position,
         cobol_status,
         cobol_message,
-        tx_hash: hex::encode(&tx_hash),
+        tx_hash: hex::encode(tx_hash),
     };
 
     (StatusCode::OK, Json(response))
@@ -212,7 +212,7 @@ async fn handle_commit_batch(State(state): State<AppState>) -> impl IntoResponse
         }
     };
 
-    let root_hex = hex::encode(&root);
+    let root_hex = hex::encode(root);
     info!(merkle_root = %root_hex, leaf_count = %leaf_count, "Committing Merkle root");
 
     // Submit to blockchain
@@ -269,7 +269,7 @@ async fn handle_tree_status(State(state): State<AppState>) -> impl IntoResponse 
     Json(TreeStatusResponse {
         leaf_count: status.leaf_count,
         pending_commits: status.pending_commits,
-        last_root: status.last_root.map(|r| hex::encode(r)),
+        last_root: status.last_root.map(hex::encode),
         last_commit_time: status.last_commit_time,
     })
 }
@@ -289,7 +289,7 @@ async fn main() -> Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    info!("🚀 Starting Legacy Titan Bridge Security Sidecar");
+    info!("Starting the Legacy Titan Bridge sidecar");
 
     // Load environment variables
     dotenvy::dotenv().ok();
@@ -314,12 +314,12 @@ async fn main() -> Result<()> {
 
     let cobol = match ffi::CobolBridge::new(&cobol_lib_path) {
         Ok(bridge) => {
-            info!("✅ COBOL library loaded from {}", cobol_lib_path);
+            info!("COBOL library loaded from {}", cobol_lib_path);
             Some(Arc::new(bridge))
         }
         Err(e) => {
             info!(
-                "⚠️ COBOL library not available: {}. Running in simulation mode.",
+                "COBOL library not available: {}. Transfers will return a simulated COBOL result.",
                 e
             );
             None
@@ -351,8 +351,8 @@ async fn main() -> Result<()> {
         .unwrap_or(3000);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
-    info!("🌐 Server listening on http://0.0.0.0:{}", port);
-    info!("📊 Endpoints:");
+    info!("Listening on http://0.0.0.0:{}", port);
+    info!("Endpoints:");
     info!("   POST /transfer     - Process transaction");
     info!("   POST /commit-batch - Submit Merkle root");
     info!("   GET  /health       - Health check");

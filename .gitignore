@@ -1,7 +1,6 @@
 # Rust build artifacts
 /sidecar/target/
 **/*.rs.bk
-Cargo.lock
 
 # COBOL compiled objects
 *.so

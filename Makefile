@@ -61,27 +61,27 @@ down:
 
 demo: build
 	@echo ""
-	@echo "🚀 Starting Legacy Titan Bridge Demo"
+	@echo "Legacy Titan Bridge demo"
 	@echo "====================================="
 	@echo ""
 	@echo "Starting sidecar in background..."
 	@cd sidecar && cargo run &
 	@sleep 3
 	@echo ""
-	@echo "📊 Health Check:"
+	@echo "Health check:"
 	@curl -s http://localhost:3000/health | jq .
 	@echo ""
-	@echo "💸 Sending test transfer (LOW RISK):"
+	@echo "Test transfer, LOW risk:"
 	@curl -s -X POST http://localhost:3000/transfer \
 		-H "Content-Type: application/json" \
 		-d '{"transaction_id":"TX-001","amount":500.00,"from_account":"ACC-A","to_account":"ACC-B"}' | jq .
 	@echo ""
-	@echo "⚠️  Sending test transfer (HIGH RISK > $$10,000):"
+	@echo "Test transfer, HIGH risk (over $$10,000):"
 	@curl -s -X POST http://localhost:3000/transfer \
 		-H "Content-Type: application/json" \
 		-d '{"transaction_id":"TX-002","amount":15000.00,"from_account":"ACC-A","to_account":"ACC-C"}' | jq .
 	@echo ""
-	@echo "🌳 Tree Status:"
+	@echo "Tree status:"
 	@curl -s http://localhost:3000/tree-status | jq .
 	@echo ""
 	@echo "Demo complete! Press Ctrl+C to stop the server."
